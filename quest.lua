@@ -645,14 +645,21 @@ function pfQuest:AddQuestLogIntegration()
   dockTitle:SetJustifyV("BOTTOM")
 
   pfQuest.buttonOnline = pfQuest.buttonOnline or CreateFrame("Button", "pfQuestOnline", dockFrame)
+  -- the configured database wins over the hardcoded default when it is set
+  function pfQuest:GetDatabaseURL()
+    local custom = pfQuest_config and pfQuest_config["dburl"]
+    if custom and custom ~= "" then return custom end
+    return pfQuest.dburl or ""
+  end
+
   pfQuest.buttonOnline:SetSize(18, 15)
   pfQuest.buttonOnline:SetPoint("TOPRIGHT", dockFrame, "TOPRIGHT", -12, -10)
   pfQuest.buttonOnline:SetScript("OnClick", function()
     if pfUI and pfUI.chat then
-      pfUI.chat.urlcopy.text:SetText(pfQuest.dburl .. (this:GetID() or 0))
+      pfUI.chat.urlcopy.text:SetText(pfQuest:GetDatabaseURL() .. (this:GetID() or 0))
       pfUI.chat.urlcopy:Show()
     else
-      StaticPopupDialogs["PFQUEST_URLCOPY"].data = pfQuest.dburl .. (this:GetID() or 0)
+      StaticPopupDialogs["PFQUEST_URLCOPY"].data = pfQuest:GetDatabaseURL() .. (this:GetID() or 0)
       local dialog = StaticPopup_Show("PFQUEST_URLCOPY")
       _G[dialog:GetName() .. "Button1"]:ClearAllPoints()
       _G[dialog:GetName() .. "Button1"]:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 16)

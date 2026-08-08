@@ -45,10 +45,10 @@ local reset = {
 
 -- default config
 pfQuest_defconfig = {
-  { -- 1: All Quests; 2: Tracked; 3: Manual; 4: Hide
+  { -- 1: All Quests; 2: Tracked; 3: Manual; 4: Hide; 5: Current Zone
     config = "trackingmethod",
     text = nil,
-    default = 1,
+    default = 5, -- Current Zone: upstream ships 1, which puts every active quest in the tracker at once
     type = nil,
   },
   {
@@ -67,6 +67,11 @@ pfQuest_defconfig = {
   { text = L["Show Database IDs"], default = "0", type = "checkbox", config = "showids" },
   { text = L["Draw Favorites On Login"], default = "0", type = "checkbox", config = "favonlogin" },
   { text = L["Minimum Item Drop Chance"], default = "1", type = "text", config = "mindropchance" },
+  -- Defaults to OctoWoW's database. Left as a plain text box rather than being
+  -- derived from the loaded pack, because the packs disagree and the one that
+  -- wins is decided by folder name -- see pfQuest:GetDatabaseURL(). Clear the
+  -- box to fall back to whatever the pack sets.
+  { text = L["Quest Database Website"], default = "https://octowow.st/db/?quest=", type = "text", config = "dburl" },
   { text = L["Show Tooltips"], default = "1", type = "checkbox", config = "showtooltips" },
   { text = L["Show Help On Tooltips"], default = "1", type = "checkbox", config = "tooltiphelp" },
   { text = L["Show Level On Quest Tracker"], default = "1", type = "checkbox", config = "trackerlevel" },

@@ -1002,15 +1002,25 @@ function pfMap:NodeLeave()
   pfMap.highlight = nil
 end
 
+-- User facing node scale, as a multiplier rather than a pixel size so the
+-- larger cluster nodes keep their proportion to the regular ones. Falls back to
+-- 1 for a missing, non-numeric or zero/negative value, since the result feeds
+-- SetWidth/SetHeight directly.
+function pfMap:GetNodeScale(obj)
+  local scale = tonumber(pfQuest_config[obj == "minimap" and "minimapnodescale" or "worldmapnodescale"])
+  if not scale or scale <= 0 then return 1 end
+  return scale
+end
+
 function pfMap:BuildNode(name, parent)
   local f = CreateFrame("Button", name, parent)
 
   if parent == WorldMapButton then
     f.defalpha = tonumber(pfQuest_config["worldmaptransp"]) or 1
-    f.defsize = 14
+    f.defsize = 14 * pfMap:GetNodeScale()
   else
     f.defalpha = tonumber(pfQuest_config["minimaptransp"]) or 1
-    f.defsize = 14
+    f.defsize = 14 * pfMap:GetNodeScale("minimap")
     f.minimap = true
   end
 
@@ -1163,6 +1173,13 @@ function pfMap:ResizeNode(frame, obj)
 
   -- set default sizes for different node types
   frame.defsize = (frame.cluster or frame.layer == 4) and 18 or 14
+
+  -- Apply the configured scale here too, not just in BuildNode: this function
+  -- reassigns defsize from scratch on every resize, so scaling only at build
+  -- time would be thrown away the first time the map zoomed. Applied before the
+  -- zoom adjustment below so the icon inset compensation works off the scaled
+  -- base rather than the raw 14/18.
+  frame.defsize = frame.defsize * pfMap:GetNodeScale(obj)
 
   -- Adjust node size if main map is zoomed in/out
   if (obj ~= "minimap") then

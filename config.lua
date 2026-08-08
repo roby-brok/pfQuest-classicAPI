@@ -105,6 +105,8 @@ pfQuest_defconfig = {
   { text = L["Color Map Nodes By Spawn"], default = "0", type = "checkbox", config = "spawncolors" },
   { text = L["World Map Node Transparency"], default = "1.0", type = "text", config = "worldmaptransp" },
   { text = L["Minimap Node Transparency"], default = "1.0", type = "text", config = "minimaptransp" },
+  { text = L["World Map Node Scale"], default = "1.0", type = "text", config = "worldmapnodescale" },
+  { text = L["Minimap Node Scale"], default = "1.0", type = "text", config = "minimapnodescale" },
   { text = L["Node Fade Transparency"], default = "0.3", type = "text", config = "nodefade" },
   { text = L["Highlight Nodes On Mouseover"], default = "1", type = "checkbox", config = "mouseover" },
 

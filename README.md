@@ -11,6 +11,8 @@
 > | **Roby_Brok** | this repo: four local patches for OctoWoW on top of Railgun's tree. |
 >
 > Upstream is **https://github.com/brues-code/pfQuest** — go there for the real project.
+>
+> 📋 **[CHANGES-octo.md](CHANGES-octo.md) — full changelog of the changes on top of upstream.**
 > Local changes live on the `octo` branch. GPLv3, same as upstream; see `LICENSE`.
 
 # pfQuest

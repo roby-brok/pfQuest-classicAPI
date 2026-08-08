@@ -1,3 +1,18 @@
+> ### Attribution
+>
+> **This is a private downstream fork. Almost none of the work here is mine.**
+>
+> | | |
+> |---|---|
+> | **[Shagu](https://github.com/shagu/pfQuest)** | created pfQuest, with **txtsd** maintaining. |
+> | **[brues-code / Railgun](https://github.com/brues-code/pfQuest)** | modernised it onto ClassicAPI — reading through the API instead of shipped tables (`C_QuestLog`, `C_Item`, `C_TaxiMap`, DBC-derived race/class bitmasks). **Also the author of [ClassicAPI](https://github.com/brues-code/ClassicAPI)** itself. |
+> | **[The Kludge Bureau](https://github.com/The-Kludge-Bureau/pfQuest)** | the build this fork's data lineage came from. |
+> | **[VMaNGOS](https://github.com/vmangos)** | the underlying quest database. |
+> | **Roby_Brok** | this repo: four local patches for OctoWoW on top of Railgun's tree. |
+>
+> Upstream is **https://github.com/brues-code/pfQuest** — go there for the real project.
+> Local changes live on the `octo` branch. GPLv3, same as upstream; see `LICENSE`.
+
 # pfQuest
 
 <img src="https://raw.githubusercontent.com/The-Kludge-Bureau/pfQuest/main/_img/mode.png" float="right" align="right" width="25%">

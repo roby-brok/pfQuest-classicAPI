@@ -1,7 +1,7 @@
 ## Interface: 11200
 ## Title: |cff33ffccpf|cffffffffQuest
-## Author: Shagu, txtsd
-## Notes: A Questhelper and Database
+## Author: Shagu, txtsd, brues - local patches by Roby_Brok
+## Notes: A Questhelper and Database [ClassicAPI build + local patches]
 ## Notes-ruRU: Облегченный помощник заданий и база данных
 ## Version: @project-version@
 ## OptionalDeps: pfUI

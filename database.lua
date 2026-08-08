@@ -1912,6 +1912,12 @@ function pfDatabase:AddCustomIcon(id, img, root)
 end
 
 function pfDatabase:FormatQuestText(questText)
+  -- A database pack may replace a quest's locale entry with one that has no
+  -- "O" or "D" field - patchtable assigns whole entries, so the base text is
+  -- gone rather than merged. Four of this function's callers pass the field
+  -- straight in without a nil test, which turned that into a gsub error.
+  if not questText then return "" end
+
   questText = string.gsub(questText, "$[Nn]", UnitName("player"))
   questText = string.gsub(questText, "$[Cc]", strlower(UnitClass("player")))
   questText = string.gsub(questText, "$[Rr]", strlower(UnitRace("player")))

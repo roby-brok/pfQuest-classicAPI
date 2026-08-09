@@ -32,6 +32,10 @@ absent descriptions.
   from scratch on every resize, so scaling only in `BuildNode` is discarded the first time
   the map zooms.
 
+- **Build identity in the toc.** Credits brues alongside the original authors and marks the
+  loaded build as *[ClassicAPI build + local patches]*, so which tree is running is visible
+  from the addon list.
+
 ## Not ported, and why
 
 `pfQuest_questcache` from our older fork cached an expensive fuzzy lookup — matching quest

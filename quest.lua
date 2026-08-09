@@ -673,64 +673,12 @@ function pfQuest:AddQuestLogIntegration()
   pfQuest.buttonOnline.txt:SetJustifyH("RIGHT")
   pfQuest.buttonOnline.txt:SetText("|cff000000[|cffaa2222?|cff000000]")
 
-  pfQuest.buttonLanguage = pfQuest.buttonLanguage or CreateFrame("Button", "pfQuestLanguage", dockFrame)
-  pfQuest.buttonLanguage:SetSize(75, 15)
-  pfQuest.buttonLanguage:SetPoint("RIGHT", pfQuest.buttonOnline, "LEFT", 0, 0)
-
-  pfQuest.buttonLanguage.txt = pfQuest.buttonLanguage:CreateFontString("pfQuestIDButton", "HIGH", "GameFontWhite")
-  pfQuest.buttonLanguage.txt:SetAllPoints(pfQuest.buttonLanguage)
-  pfQuest.buttonLanguage.txt:SetJustifyH("RIGHT")
-  pfQuest.buttonLanguage.txt:SetText("|cff000000[|cff333333" .. pfQuest_Loc["Translate"] .. "|cff000000]")
-
-  pfQuest.buttonLanguage:SetScript("OnClick", function()
-    UIDropDownMenu_Initialize(self, function()
-      local func = function()
-        pfQuest_config.translate = this.value
-      end
-      local info = {}
-      info.text = "|cffaaaaaa" .. pfQuest_Loc["Reset Language"]
-      info.value = nil
-      info.func = func
-      UIDropDownMenu_AddButton(info)
-
-      for loc, caption in pairs(pfDB.locales) do
-        local info = {}
-        info.text = caption
-        info.value = loc
-        info.func = func
-        UIDropDownMenu_AddButton(info)
-      end
-    end)
-    ToggleDropDownMenu(1, nil, self, "cursor", 3, -3)
-  end)
-
-  pfQuest.buttonLanguage:SetScript("OnUpdate", function()
-    local id = pfQuest.buttonOnline:GetID()
-    local lang = pfQuest_config.translate
-
-    if this.translate ~= pfQuest_config.translate then
-      pfQuest.buttonLanguage.txt:SetText(
-        "|cff000000[|cff3333ff"
-          .. (pfDB.locales[pfQuest_config.translate] or "|cff333333" .. pfQuest_Loc["Translate"])
-          .. "|cff000000]"
-      )
-      this.translate = pfQuest_config.translate
-      QuestLog_UpdateQuestDetails(true)
-      return
-    end
-
-    if id and pfDB["quests"][lang] and pfDB["quests"][lang][id] then
-      local QuestLogQuestTitle = EQL3_QuestLogQuestTitle or pfQuestCompat.QuestLogQuestTitle
-      local QuestLogObjectivesText = EQL3_QuestLogObjectivesText or pfQuestCompat.QuestLogObjectivesText
-      local QuestLogQuestDescription = EQL3_QuestLogQuestDescription or pfQuestCompat.QuestLogQuestDescription
-      local QuestLogDetailScrollFrame = EQL3_QuestLogDetailScrollFrame or QuestLogDetailScrollFrame
-
-      QuestLogQuestTitle:SetText(pfDatabase:FormatQuestText(pfDB["quests"][lang][id]["T"]))
-      QuestLogObjectivesText:SetText(pfDatabase:FormatQuestText(pfDB["quests"][lang][id]["O"]))
-      QuestLogQuestDescription:SetText(pfDatabase:FormatQuestText(pfDB["quests"][lang][id]["D"]))
-      QuestLogDetailScrollFrame:UpdateScrollChildRect()
-    end
-  end)
+  -- The [Translate] button lived here. It never worked: its OnClick passed the
+  -- global `self` (nil in a 1.12 handler -- the frame is `this`) to
+  -- UIDropDownMenu_Initialize and ToggleDropDownMenu, so the menu never opened,
+  -- and database.lua frees every non-active locale table at load, so the text it
+  -- wanted to show was already gone. Removed along with the non-enUS databases;
+  -- its per-frame OnUpdate went with it.
 
   pfQuest.buttonShow = pfQuest.buttonShow or CreateFrame("Button", "pfQuestShow", dockFrame, "UIPanelButtonTemplate")
   pfQuest.buttonShow:SetSize(70, 20)
@@ -921,7 +869,6 @@ QuestLog_Update = function()
     if questids and questids[1] and tonumber(questids[1]) and pfQuest.questlog[questids[1]] then
       pfQuest.buttonOnline:SetID(questids[1])
       pfQuest.buttonOnline:Show()
-      pfQuest.buttonLanguage:Show()
       -- enable buttons
       pfQuest.buttonShow:Enable()
       pfQuest.buttonHide:Enable()
@@ -932,7 +879,6 @@ QuestLog_Update = function()
       end
     else
       pfQuest.buttonOnline:Hide()
-      pfQuest.buttonLanguage:Hide()
       -- disable buttons
       pfQuest.buttonShow:Disable()
       pfQuest.buttonHide:Disable()

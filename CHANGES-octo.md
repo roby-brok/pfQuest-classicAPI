@@ -18,6 +18,16 @@ Relevant to any server running a data pack on top: `pfQuest-octo`'s `patchtable`
 exactly this whole-entry assignment, and the OctoWoW dataset has quests with genuinely
 absent descriptions.
 
+**`quest.lua` — the `[Translate]` button cannot work, for two independent reasons.** Its
+`OnClick` passes the global `self` to `UIDropDownMenu_Initialize` and `ToggleDropDownMenu`.
+In a 1.12 script handler the frame is `this`; `self` is nil, so the menu never opens — and
+with `scriptErrors` off, silently. Even repaired, it would show nothing: the locale-freeing
+loop added in `database.lua` ("Free unused locale data to reduce memory") nils out every
+non-active locale table at load, so the `pfDB["quests"][lang]` the button reads is always
+nil for whatever language is picked. The optimisation and the feature are mutually
+exclusive, and the dead UI shipped alongside it. Removed here rather than repaired — see
+below.
+
 ## Local changes
 
 - **Tracker defaults to Current Zone** rather than All Quests, which otherwise puts every
@@ -35,6 +45,18 @@ absent descriptions.
 - **Build identity in the toc.** Credits brues alongside the original authors and marks the
   loaded build as *[ClassicAPI build + local patches]*, so which tree is running is visible
   from the addon list.
+
+- **English only.** The eight non-`enUS` databases are no longer shipped or loaded, and the
+  `[Translate]` button that was their only consumer is gone with them (it never worked —
+  see above). This is 30.1 MB of Lua that every login parsed in full and the locale-freeing
+  loop then threw away again; together with the same change in `pfQuest-octo` it takes the
+  two addons from 90.4 MB of Lua parsed at startup down to 38.6 MB. Steady-state memory is
+  unchanged — upstream already frees these tables — the saving is login time and peak
+  memory. `pfDB.locales` is kept as a one-entry table rather than emptied, so the locale
+  detection loop, the `dbstring` readout and the pack's per-locale patch loop all still
+  work, and a non-enUS client falls back cleanly through the existing
+  `pfDB[db][loc] or pfDB[db]["enUS"]`. The addon's own UI strings (`locales.lua`) are
+  untouched — they are small and independent of the quest text.
 
 ## Not ported, and why
 

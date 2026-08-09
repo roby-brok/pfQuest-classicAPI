@@ -9,13 +9,5 @@
 
 init\data.xml
 init\enUS.xml
-init\koKR.xml
-init\frFR.xml
-init\deDE.xml
-init\zhCN.xml
-init\zhTW.xml
-init\esES.xml
-init\ruRU.xml
-init\ptBR.xml
 
 init\addon.xml

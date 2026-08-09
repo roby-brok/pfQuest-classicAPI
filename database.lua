@@ -31,19 +31,16 @@ local dbs =
   { "items", "quests", "quests-itemreq", "objects", "units", "zones", "areatrigger", "refloot" }
 local noloc = { items = true, quests = true, objects = true, units = true }
 
--- This build ships enUS quest/item/unit text only.
---
--- The other eight locales were ~28MB of Lua that every login parsed in full and
--- the loop below then threw away again, because only the active locale is ever
--- read. The one feature that used them -- the quest log's [Translate] button --
--- could not work regardless: that same loop frees every non-active locale table
--- before the button is ever clickable, so pfDB["quests"][lang] is always nil for
--- whatever language is picked. The button was removed with the data.
---
--- Keep this table populated (rather than empty) so the detection loop, the
--- dbstring readout and pfQuest-octo's per-locale patch loop all still work.
 pfDB.locales = {
   ["enUS"] = "English",
+  ["koKR"] = "Korean",
+  ["frFR"] = "French",
+  ["deDE"] = "German",
+  ["zhCN"] = "Chinese (Simplified)",
+  ["zhTW"] = "Chinese (Traditional)",
+  ["esES"] = "Spanish",
+  ["ruRU"] = "Russian",
+  ["ptBR"] = "Portuguese",
 }
 
 -- Return the best cluster point for a coordiante table

@@ -61,6 +61,25 @@ Both are fixed here rather than removed — see below.
   hides itself whenever the data is absent, and lists only languages whose table actually
   survived — a button that is visible and does nothing is the bug, not the feature.
 
+- **`corrections.lua` — objective data missing from the shipped database.** Seven quests
+  that draw no objective pins because the upstream data has no `["obj"]` for them, most
+  visibly Un'Goro's three crystal pylons (4285/4287/4288), whose entire objective is *find
+  this thing* and which pointed at nothing at all. Also *Lonebrow's Journal* (1100),
+  *The Torch of Retribution* (3454), *Catalogue of the Wayward* (5164) and
+  *A Bijou for Zanza* (8240).
+
+  Corrections apply only where the field is absent, so a future database that ships real
+  data silently takes precedence.
+
+  These were found by scanning for quests with no `obj` whose objective text names a known
+  game object, then **checking every hit by hand** — which is the point worth recording: of
+  the 20 candidates the scan produced, **13 were wrong**. *Master Ryson's All Seeing Eye*
+  (6847/6848) resolves to an object standing in Alterac Valley for a quest that happens in
+  the Hinterlands, and several others matched the object that *starts* the quest rather than
+  the one you are sent to find. A looser earlier pass returned 315 hits and was matching
+  quest-giver names and zone signposts. Bulk-applying any of that would have put confidently
+  wrong pins on the map, which is worse than none.
+
 - **`/db checkdb`** reports any quest in your log with no objective data. A quest with no
   `["obj"]` draws no pins and says nothing about it, which is how *Shizzle's Flyer* went
   unnoticed. Whole-entry database merging used to cause this in bulk (fixed in

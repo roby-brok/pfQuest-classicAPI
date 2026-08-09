@@ -18,4 +18,6 @@ init\esES.xml
 init\ruRU.xml
 init\ptBR.xml
 
+corrections.lua
+
 init\addon.xml

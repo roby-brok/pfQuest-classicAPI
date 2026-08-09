@@ -80,6 +80,13 @@ Both are fixed here rather than removed — see below.
   quest-giver names and zone signposts. Bulk-applying any of that would have put confidently
   wrong pins on the map, which is worse than none.
 
+- **`/db` no longer prints `@project-version@`.** The toc keeps the packager placeholder
+  deliberately: `updatenotify.lua` bails on exactly that string, and that is what stops an
+  unpackaged fork broadcasting a version into the shared `pfQuest-CAPI` addon channel and
+  telling everyone else in the raid they are out of date. Giving the toc a real version
+  number to tidy the display would quietly re-enable that, so the *display* is fixed
+  instead — it now reads "ClassicAPI build + local patches".
+
 - **`/db checkdb`** reports any quest in your log with no objective data. A quest with no
   `["obj"]` draws no pins and says nothing about it, which is how *Shizzle's Flyer* went
   unnoticed. Whole-entry database merging used to cause this in bulk (fixed in

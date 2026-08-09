@@ -172,6 +172,15 @@ for _, name in pairs(tocs) do
   if title then
     pfQuestConfig.path = "Interface\\AddOns\\" .. current
     pfQuestConfig.version = tostring(GetAddOnMetadata(current, "Version"))
+    -- The toc deliberately keeps the packager's "@project-version@" placeholder:
+    -- updatenotify.lua bails on exactly that string, which is what stops an
+    -- unpackaged build broadcasting a version number into the shared
+    -- "pfQuest-CAPI" channel and telling everyone else they are out of date.
+    -- Don't change the toc to fix the display -- just don't show the raw
+    -- placeholder to the user.
+    if pfQuestConfig.version == "@project-version@" then
+      pfQuestConfig.version = "ClassicAPI build + local patches"
+    end
     break
   end
 end

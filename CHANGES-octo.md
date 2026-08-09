@@ -18,6 +18,20 @@ Relevant to any server running a data pack on top: `pfQuest-octo`'s `patchtable`
 exactly this whole-entry assignment, and the OctoWoW dataset has quests with genuinely
 absent descriptions.
 
+**`quest.lua` — the `[Translate]` button never worked, for two independent reasons.**
+
+1. Its `OnClick` passes the global `self` to `UIDropDownMenu_Initialize` and
+   `ToggleDropDownMenu`. A 1.12 script handler has no `self` — the frame is `this` — so both
+   received nil and the menu never opened. Silently, with `scriptErrors` off. This one dates
+   back to the original and is present in every pfQuest lineage.
+2. Even repaired, it would have shown nothing. The locale-freeing loop in `database.lua`
+   ("Free unused locale data to reduce memory") nils out every non-active locale table at
+   load, so the `pfDB["quests"][lang]` the button reads is always nil for whatever language
+   is picked. The optimisation and the feature are mutually exclusive, and the optimisation
+   shipped without anyone noticing it had killed the button.
+
+Both are fixed here rather than removed — see below.
+
 ## Local changes
 
 - **Tracker defaults to Current Zone** rather than All Quests, which otherwise puts every
@@ -35,6 +49,25 @@ absent descriptions.
 - **Build identity in the toc.** Credits brues alongside the original authors and marks the
   loaded build as *[ClassicAPI build + local patches]*, so which tree is running is visible
   from the addon list.
+
+- **`[Translate]` works.** `this` instead of `self`, and the locale-freeing loop now spares
+  the `quests` locale tables — the only ones the button reads. Measured across the eight
+  non-active locales, that keeps 19.8 MB and still frees 10.7 MB (`items` 5.6, `units` 2.9,
+  `objects` 2.3), all of which really are unreachable once `loc` is assigned. A new
+  **Quest Text Translations** option (default on) frees the rest and hides the button.
+
+  The freeing decision moved to `VARIABLES_LOADED`, because `pfQuestConfig:LoadConfig()`
+  runs on `ADDON_LOADED` and the option is not readable at file scope. And the button now
+  hides itself whenever the data is absent, and lists only languages whose table actually
+  survived — a button that is visible and does nothing is the bug, not the feature.
+
+- **`/db checkdb`** reports any quest in your log with no objective data. A quest with no
+  `["obj"]` draws no pins and says nothing about it, which is how *Shizzle's Flyer* went
+  unnoticed. Whole-entry database merging used to cause this in bulk (fixed in
+  `pfQuest-octo`), but a bad pack update or a real data gap still can, so it is now
+  something you can check rather than something you discover by staring at the map.
+  A pure delivery quest legitimately has no objectives; anything asking you to kill or
+  collect should never be listed.
 
 ## Not ported, and why
 

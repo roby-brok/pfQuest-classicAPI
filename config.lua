@@ -65,6 +65,11 @@ pfQuest_defconfig = {
   { text = L["Enable Quest Log Buttons"], default = "1", type = "checkbox", config = "questlogbuttons" },
   { text = L["Enable Quest Link Support"], default = "1", type = "checkbox", config = "questlinks" },
   { text = L["Show Database IDs"], default = "0", type = "checkbox", config = "showids" },
+  -- Keeps the non-active quest locale tables in memory (19.8 MB) so the quest
+  -- log's [Translate] button has something to read. Off frees them and hides
+  -- the button; a dead button was the previous behaviour and is not an option.
+  -- Read at VARIABLES_LOADED in database.lua, so a change needs a reload.
+  { text = L["Quest Text Translations"], default = "1", type = "checkbox", config = "translations" },
   { text = L["Draw Favorites On Login"], default = "0", type = "checkbox", config = "favonlogin" },
   { text = L["Minimum Item Drop Chance"], default = "1", type = "text", config = "mindropchance" },
   -- Defaults to OctoWoW's database. Left as a plain text box rather than being

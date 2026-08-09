@@ -52,6 +52,9 @@ SlashCmdList["PFDB"] = function(input, editbox)
     DEFAULT_CHAT_FRAME:AddMessage(
       "|cff33ffcc/db|cffffffff query |cffcccccc - " .. pfQuest_Loc["Query the server for completed quests"]
     )
+    DEFAULT_CHAT_FRAME:AddMessage(
+      "|cff33ffcc/db|cffffffff checkdb |cffcccccc - " .. pfQuest_Loc["Report quests in your log with no objective data"]
+    )
     return
   end
 
@@ -371,6 +374,49 @@ SlashCmdList["PFDB"] = function(input, editbox)
   -- argument: query
   if arg1 == "query" then
     pfDatabase:QueryServer()
+    return
+  end
+
+  -- argument: checkdb
+  --
+  -- Answers "why can't I see the mobs I need to kill?" without guesswork.
+  -- A quest with no ["obj"] block produces no objective pins at all, and does
+  -- so silently -- which is how quest 4503 (Shizzle's Flyer) went unnoticed
+  -- until someone happened to look at the map. Whole-entry database merging
+  -- used to cause this in bulk; that is fixed, but a bad pack update or a
+  -- genuine data gap can still do it, so make it something you can check.
+  if arg1 == "checkdb" then
+    local qdata = pfDB["quests"]["data"]
+    local qloc = pfDB["quests"]["loc"]
+    local missing, total = {}, 0
+
+    for questid, data in pairs(pfQuest.questlog or {}) do
+      total = total + 1
+      local entry = qdata and qdata[questid]
+      local obj = entry and entry["obj"]
+      if not (obj and next(obj)) then
+        local title = (qloc and qloc[questid] and qloc[questid]["T"]) or data.title or "?"
+        insert(missing, format("|cffffcc00%s|r |cffcccccc(%s)|r", title, tostring(questid)))
+      end
+    end
+
+    DEFAULT_CHAT_FRAME:AddMessage(
+      "|cff33ffccpf|cffffffffQuest|r: checked " .. total .. " quest(s) in your log."
+    )
+
+    if getn(missing) == 0 then
+      DEFAULT_CHAT_FRAME:AddMessage("  |cff33ff33All of them have objective data.|r")
+    else
+      DEFAULT_CHAT_FRAME:AddMessage(
+        "  |cffff5555" .. getn(missing) .. " with no objective data -- these draw no pins:|r"
+      )
+      for i = 1, getn(missing) do
+        DEFAULT_CHAT_FRAME:AddMessage("    " .. missing[i])
+      end
+      DEFAULT_CHAT_FRAME:AddMessage(
+        "  |cffccccccA pure delivery quest legitimately has none. Anything that asks you to kill or collect should not be listed -- that is a database bug worth reporting.|r"
+      )
+    end
     return
   end
 

@@ -683,7 +683,12 @@ function pfQuest:AddQuestLogIntegration()
   pfQuest.buttonLanguage.txt:SetText("|cff000000[|cff333333" .. pfQuest_Loc["Translate"] .. "|cff000000]")
 
   pfQuest.buttonLanguage:SetScript("OnClick", function()
-    UIDropDownMenu_Initialize(self, function()
+    -- `this`, not `self`. A 1.12 script handler has no `self`; it was nil, so
+    -- UIDropDownMenu_Initialize errored out on a nil frame and the menu never
+    -- opened -- silently, because scriptErrors is off.
+    local dropdown = this
+
+    UIDropDownMenu_Initialize(dropdown, function()
       local func = function()
         pfQuest_config.translate = this.value
       end
@@ -693,15 +698,19 @@ function pfQuest:AddQuestLogIntegration()
       info.func = func
       UIDropDownMenu_AddButton(info)
 
+      -- Only offer languages whose table actually survived database.lua's
+      -- locale freeing, and skip the one already on screen.
       for loc, caption in pairs(pfDB.locales) do
-        local info = {}
-        info.text = caption
-        info.value = loc
-        info.func = func
-        UIDropDownMenu_AddButton(info)
+        if pfDB["quests"][loc] and pfDB["quests"][loc] ~= pfDB["quests"]["loc"] then
+          local info = {}
+          info.text = caption
+          info.value = loc
+          info.func = func
+          UIDropDownMenu_AddButton(info)
+        end
       end
     end)
-    ToggleDropDownMenu(1, nil, self, "cursor", 3, -3)
+    ToggleDropDownMenu(1, nil, dropdown, "cursor", 3, -3)
   end)
 
   pfQuest.buttonLanguage:SetScript("OnUpdate", function()
@@ -921,7 +930,13 @@ QuestLog_Update = function()
     if questids and questids[1] and tonumber(questids[1]) and pfQuest.questlog[questids[1]] then
       pfQuest.buttonOnline:SetID(questids[1])
       pfQuest.buttonOnline:Show()
-      pfQuest.buttonLanguage:Show()
+      -- Never show the button when its data was freed -- that is precisely the
+      -- state in which it looked functional and did nothing.
+      if pfDatabase.translations then
+        pfQuest.buttonLanguage:Show()
+      else
+        pfQuest.buttonLanguage:Hide()
+      end
       -- enable buttons
       pfQuest.buttonShow:Enable()
       pfQuest.buttonHide:Enable()

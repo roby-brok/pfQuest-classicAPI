@@ -113,20 +113,61 @@ for id, db in pairs(dbs) do
     .. "|cffcccccc]"
 end
 
--- Free unused locale data to reduce memory (~65MB savings)
--- The "loc" reference already points to the correct table, so we can safely
--- nil out all other locale tables and let them be garbage collected
-for id, db in pairs(dbs) do
-  for locale in pairs(pfDB.locales) do
-    if pfDB[db][locale] and pfDB[db][locale] ~= pfDB[db]["loc"] then
-      pfDB[db][locale] = nil
+-- Free unused locale data to reduce memory.
+--
+-- The "loc" reference already points to the correct table, so every other
+-- locale table can be dropped and garbage collected.
+--
+-- EXCEPT "quests". The quest log's [Translate] button reads
+-- pfDB["quests"][lang][id] for whatever language the user picks, so freeing
+-- those tables silently disables the feature -- the button stays clickable and
+-- does nothing, which is exactly what it did before this exception existed.
+-- If you free them again, remove the button too (see quest.lua).
+--
+-- Cost of the exception, measured across the eight non-active locales:
+--   quests   19.8 MB  <- kept
+--   items     5.6 MB     freed
+--   units     2.9 MB     freed
+--   objects   2.3 MB     freed
+-- so 10.7 MB of the 30.5 MB is still reclaimed here, and the rest can be
+-- reclaimed by turning the "Quest text translations" option off.
+local function freelocales(only)
+  for id, db in pairs(dbs) do
+    if not only or db == only then
+      for locale in pairs(pfDB.locales) do
+        if pfDB[db][locale] and pfDB[db][locale] ~= pfDB[db]["loc"] then
+          pfDB[db][locale] = nil
+        end
+      end
+      -- Also free enUS if it's not the active locale (enUS may not be in pfDB.locales)
+      if pfDB[db]["enUS"] and pfDB[db]["enUS"] ~= pfDB[db]["loc"] then
+        pfDB[db]["enUS"] = nil
+      end
     end
   end
-  -- Also free enUS if it's not the active locale (enUS may not be in pfDB.locales)
-  if pfDB[db]["enUS"] and pfDB[db]["enUS"] ~= pfDB[db]["loc"] then
-    pfDB[db]["enUS"] = nil
+end
+
+-- Everything but "quests" is unreachable once "loc" is assigned, so drop it now.
+for id, db in pairs(dbs) do
+  if db ~= "quests" then
+    freelocales(db)
   end
 end
+
+-- The quest locales are only reachable through the [Translate] button, so the
+-- decision needs pfQuest_config -- which is not populated at file scope.
+-- pfQuestConfig:LoadConfig() runs on ADDON_LOADED; VARIABLES_LOADED fires after
+-- every addon's ADDON_LOADED, so the option is guaranteed readable by then.
+pfDatabase.translations = true
+local freequestlocales = CreateFrame("Frame")
+freequestlocales:RegisterEvent("VARIABLES_LOADED")
+freequestlocales:SetScript("OnEvent", function()
+  if pfQuest_config and pfQuest_config["translations"] == "0" then
+    pfDatabase.translations = false
+    freelocales("quests")
+  end
+  this:UnregisterEvent("VARIABLES_LOADED")
+end)
 
 -- track all previous meta selections on login
 pfDatabase.tracking = CreateFrame("Frame", "pfDatabaseMetaTracking", UIParent)

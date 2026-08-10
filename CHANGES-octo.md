@@ -9,35 +9,69 @@ Small, because the upstream tree needed very little: the shipped databases are
 
 ## Bugs found in the upstream tree
 
-**`database.lua` — `FormatQuestText` has no nil guard.** A database pack can replace a
-quest's locale entry with one that has no `O` or `D` field — `patchtable` assigns whole
-entries rather than merging — leaving the base text gone. Four callers pass the field
-straight in with no nil test, so that becomes a `gsub` error.
+Every claim below was re-checked against `brues-code/pfQuest@main` on 2026-08-10 before
+being offered upstream, the same audit the pfUI changelog got. Two of them did not survive
+it and are struck through rather than deleted, because a withdrawn claim is worth as much
+as a confirmed one.
 
-Relevant to any server running a data pack on top: `pfQuest-octo`'s `patchtable` does
-exactly this whole-entry assignment, and the OctoWoW dataset has quests with genuinely
-absent descriptions.
+**`database.lua` — `FormatQuestText` has no nil guard.** A quest whose locale entry has no
+`O` or `D` field arrives as nil and `gsub` throws.
 
-**`quest.lua` — the `[Translate]` button never worked, for two independent reasons.**
+Six of the nine callers test the field first (`if objectives and objectives ~= ""`,
+`if objtext then`, …). ~~Four~~ **three** do not — `quest.lua:721-723`, which index
+`pfDB["quests"][lang][id]["T"/"O"/"D"]` straight out of the locale table to feed the
+`[Translate]` button.
 
-1. Its `OnClick` passes the global `self` to `UIDropDownMenu_Initialize` and
-   `ToggleDropDownMenu`. A 1.12 script handler has no `self` — the frame is `this` — so both
-   received nil and the menu never opened. Silently, with `scriptErrors` off. This one dates
-   back to the original and is present in every pfQuest lineage.
-2. Even repaired, it would have shown nothing. The locale-freeing loop in `database.lua`
-   ("Free unused locale data to reduce memory") nils out every non-active locale table at
-   load, so the `pfDB["quests"][lang]` the button reads is always nil for whatever language
-   is picked. The optimisation and the feature are mutually exclusive, and the optimisation
-   shipped without anyone noticing it had killed the button.
+~~A pack replaces a whole locale entry because `patchtable` assigns rather than merges.~~
+**Stale — corrected 2026-08-10.** `pfQuest-octo` stopped doing that: it merges locale
+entries per-field (`patchlocale`) precisely to avoid it. The mechanism that still bites is
+narrower and survives a per-field merge: **a pack quest the base database has never heard
+of has no base entry to merge into**, so the pack's record is assigned whole, absent fields
+included. Measured — of the 2,456 quests `pfQuest-octo` adds that are not in pfQuest's base
+`enUS` table, **13 carry no `D` and 12 carry no `O`** (41908 *Raw Draenethyst Formation*,
+41923-41926 the *Stone of Dreams* set, …). So the guard is load-bearing, for a reason the
+original entry got wrong.
 
-Both are fixed here rather than removed — see below.
+**`quest.lua` / `database.lua` — the `[Translate]` button does nothing.**
+
+1. ~~Its `OnClick` passes the global `self`, and a 1.12 script handler has no `self`, so
+   `UIDropDownMenu_Initialize` and `ToggleDropDownMenu` both received nil and the menu never
+   opened.~~ **Wrong — withdrawn 2026-08-10.** `self` is not nil and not a global here. The
+   handler is a closure inside `function pfQuest:AddQuestLogIntegration()` (`quest.lua:632`),
+   which is called with a colon at `quest.lua:263`, so `self` is that method's implicit
+   receiver captured as an upvalue: `pfQuest`, a real frame from `CreateFrame("Frame")` at
+   `quest.lua:14`.
+
+   Checked against the client's own `UIDropDownMenu.lua` (patch-9.MPQ): `pfQuest` is merely
+   *unnamed*, and nothing on this path needs a name. `UIDropDownMenu_AddButton` addresses
+   `DropDownList1` directly, the `UIDROPDOWNMENU_OPEN_MENU` lookups at lines 289/298 are all
+   behind `if ( frame )`, and `anchorName == "cursor"` skips the one `..\"Left\"` concat that
+   would have thrown on a nil name. **The menu opened.** What it lost was the checkmark on
+   the selected language, since that is the part that resolves a frame by name.
+
+   Passing `this` — the button, which *is* named `pfQuestLanguage` — is still right, and is
+   kept. It is a correctness fix, not a crash fix, and it is not why the feature was dead.
+
+2. **Confirmed, and this is the whole bug.** The locale-freeing loop in `database.lua`
+   ("Free unused locale data to reduce memory") nils every non-active locale table at load,
+   `quests` included. The dropdown offers exactly `pfDB.locales` — the nine languages whose
+   tables it just freed — so `pfDB["quests"][lang]` is nil for every one the user can pick,
+   the guard on `quest.lua:714` fails, and nothing happens. The only table that survives is
+   the active locale's, which is the one already on screen.
+
+   Introduced by `3b9b1da perf: free unused locale data after initialization (~79MB
+   savings)` — upstream's own commit. The optimisation and the feature are mutually
+   exclusive and the optimisation shipped without anyone noticing it had killed the button.
+
+Fixed here rather than removed — see below.
 
 ## Local changes
 
 - **Tracker defaults to Current Zone** rather than All Quests, which otherwise puts every
-  active quest in the tracker at once. Upstream already implements mode 5 — four call sites
-  in `tracker.lua` and a `Current Zone` locale string — only the config comment listing the
-  modes was stale, and is corrected.
+  active quest in the tracker at once. Upstream already implements mode 5 fully — ~~four call
+  sites in `tracker.lua`~~ **ten across three files** (`quest.lua` ×6, `tracker.lua` ×3,
+  `route.lua` ×1), a fifth entry in the map-button menu and a `Current Zone` locale string.
+  Only `config.lua:48`, the comment listing the modes, still stopped at 4, and is corrected.
 - **Quest database website is settable.** The online-quest button hardcoded wowhead; it now
   goes through `pfQuest:GetDatabaseURL()`, which prefers a configured URL and falls back to
   the hardcoded default when the box is empty. Defaults to OctoWoW's database.

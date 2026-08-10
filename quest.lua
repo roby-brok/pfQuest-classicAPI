@@ -683,9 +683,13 @@ function pfQuest:AddQuestLogIntegration()
   pfQuest.buttonLanguage.txt:SetText("|cff000000[|cff333333" .. pfQuest_Loc["Translate"] .. "|cff000000]")
 
   pfQuest.buttonLanguage:SetScript("OnClick", function()
-    -- `this`, not `self`. A 1.12 script handler has no `self`; it was nil, so
-    -- UIDropDownMenu_Initialize errored out on a nil frame and the menu never
-    -- opened -- silently, because scriptErrors is off.
+    -- `this` (the named button), not `self`. This closure sits inside
+    -- pfQuest:AddQuestLogIntegration(), so `self` is that method's implicit
+    -- receiver -- pfQuest itself, which is a real but *unnamed* frame
+    -- (CreateFrame("Frame") at the top of this file). The menu still opened,
+    -- but every dropdown global that stores a frame *name* got nil, so
+    -- UIDROPDOWNMENU_OPEN_MENU/INIT_MENU never resolved and the selected
+    -- language lost its checkmark. The button is named, so use it.
     local dropdown = this
 
     UIDropDownMenu_Initialize(dropdown, function()

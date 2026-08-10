@@ -1953,10 +1953,15 @@ function pfDatabase:AddCustomIcon(id, img, root)
 end
 
 function pfDatabase:FormatQuestText(questText)
-  -- A database pack may replace a quest's locale entry with one that has no
-  -- "O" or "D" field - patchtable assigns whole entries, so the base text is
-  -- gone rather than merged. Four of this function's callers pass the field
-  -- straight in without a nil test, which turned that into a gsub error.
+  -- A quest whose locale entry has no "O" or "D" field arrives here as nil and
+  -- gsub throws. Most callers test the field first; the three in quest.lua that
+  -- feed the [Translate] button index it straight out of the locale table.
+  --
+  -- An entry loses a field when a database pack carries a quest the base
+  -- database has never heard of: a per-field merge has no base entry to merge
+  -- into, so it assigns the pack's record whole, absent fields included.
+  -- Measured against pfQuest-octo: of the 2456 quests it adds that are not in
+  -- the base enUS table, 13 carry no "D" and 12 carry no "O".
   if not questText then return "" end
 
   questText = string.gsub(questText, "$[Nn]", UnitName("player"))

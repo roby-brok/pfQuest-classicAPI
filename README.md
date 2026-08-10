@@ -27,6 +27,23 @@ pfQuest is the successor of [ShaguQuest](https://shagu.org/ShaguQuest/), written
 
 You can check the [Latest Changes](https://github.com/The-Kludge-Bureau/pfQuest/commits/main) page to see what has changed recently.
 
+## What this fork changes, briefly
+
+*(as of 2026-08-10 — details and reasoning in [CHANGES-octo.md](CHANGES-octo.md))*
+
+- **The `[Translate]` button works** — it was inert on every install; a new *Quest Text
+  Translations* option (default on) keeps the quest locale data it reads, and turning it
+  off frees the memory and hides the button. Offered upstream as
+  [PR #2](https://github.com/brues-code/pfQuest/pull/2).
+- **Tracker defaults to Current Zone** instead of every active quest at once
+- **Configurable quest-database website** (defaults to OctoWoW's DB) and
+  **world map / minimap node scale** options
+- **Seven quests with missing objective data restored** (`corrections.lua`, each verified
+  by hand); **`/db checkdb`** lists quests in your log that draw no pins
+- `/db` shows a build identity instead of the raw packager placeholder
+- The changelog's claims are **audited against upstream** — the ones that turned out wrong
+  stay visible, struck through, rather than quietly deleted.
+
 ## Before You Install
 
 pfQuest ships a complete database of all spawns, objects, items, and quests. The full package is approximately 80 MB and is loaded into memory once at login — memory usage is stable after that and does not grow during play.

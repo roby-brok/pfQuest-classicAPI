@@ -45,7 +45,7 @@ local reset = {
 
 -- default config
 pfQuest_defconfig = {
-  { -- 1: All Quests; 2: Tracked; 3: Manual; 4: Hide
+  { -- 1: All Quests; 2: Tracked; 3: Manual; 4: Hide; 5: Current Zone
     config = "trackingmethod",
     text = nil,
     default = 1,
@@ -160,6 +160,15 @@ for _, name in pairs(tocs) do
   if title then
     pfQuestConfig.path = "Interface\\AddOns\\" .. current
     pfQuestConfig.version = tostring(GetAddOnMetadata(current, "Version"))
+    -- An unpackaged build -- a git clone rather than a release zip -- still has
+    -- the packager's placeholder in the toc, and it was being shown verbatim in
+    -- /db and the config header. Don't substitute a version number into the toc
+    -- to fix this: updatenotify.lua bails on exactly that string, and that is
+    -- what stops an unpackaged build announcing a version to everyone else on
+    -- the addon channel. Fix the display instead.
+    if pfQuestConfig.version == "@project-version@" then
+      pfQuestConfig.version = "dev"
+    end
     break
   end
 end

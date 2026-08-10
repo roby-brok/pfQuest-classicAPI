@@ -1,6 +1,6 @@
 > ### Attribution
 >
-> **This is a private downstream fork. Almost none of the work here is mine.**
+> **This is a downstream fork. Almost none of the work here is mine.**
 >
 > | | |
 > |---|---|
@@ -35,19 +35,50 @@ On Vanilla clients, WoW will show a warning if an addon exceeds the default memo
 
 ## Downloads
 
-1. **[Download pfQuest (full)](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-full.zip)**
-2. Unpack the zip file
-3. Move the `pfQuest` folder into `Wow-Directory\Interface\AddOns`
-4. Restart WoW
+> ### ⚠️ The folder **must** be named `pfQuest`
+>
+> Not `pfQuest-classicAPI`, not `pfQuest-classicAPI-octo`. Two things break otherwise:
+>
+> 1. **WoW skips the addon.** It only loads a folder whose name matches the `.toc` inside
+>    it — a folder called `pfQuest-classicAPI` containing `pfQuest.toc` never runs, with no
+>    error and no entry in the addon list.
+> 2. **Renaming the `.toc` will not save you.** pfQuest resolves its own path by probing a
+>    fixed list of folder names:
+>    ```lua
+>    local tocs = { "", "-master", "-tbc", "-wotlk", "-turtle" }
+>    ```
+>    Anything else leaves the path unset and the icons break.
+>
+> Launchers with an "add custom git addon" feature name the folder after the repository, so
+> they **cannot** install this correctly. Install it by hand.
 
-Slim packages (single language): [English](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-enUS.zip) · [German](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-deDE.zip) · [French](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-frFR.zip) · [Spanish](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-esES.zip) · [Korean](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-koKR.zip) · [Chinese](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-zhCN.zip) · [Russian](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest/download/pfQuest-ruRU.zip)
+**Download**
 
-### Development Version
+1. Grab the [latest code](https://github.com/roby-brok/pfQuest-classicAPI/archive/refs/heads/octo.zip) (branch `octo`)
+2. Unpack it — you get a folder called `pfQuest-classicAPI-octo`
+3. **Rename it to `pfQuest`**
+4. Move it into `Wow-Directory\Interface\AddOns`
+5. Restart WoW
 
-The development version includes databases for all languages and all client expansions in a single folder. It will work in both Vanilla and TBC mode depending on the folder name. Due to the amount of included data, expect higher RAM and disk usage and slightly longer load times compared to the release packages.
+**Or with git**, so updates are a `git pull`:
 
-- Clone via Git: [`https://github.com/The-Kludge-Bureau/pfQuest.git`](https://github.com/The-Kludge-Bureau/pfQuest.git)
-- Download as zip: **[main.zip](https://github.com/The-Kludge-Bureau/pfQuest/archive/main.zip)**
+```sh
+cd Wow-Directory/Interface/AddOns
+git clone -b octo https://github.com/roby-brok/pfQuest-classicAPI.git pfQuest
+```
+
+The trailing `pfQuest` is what names the folder correctly.
+
+**Requires [ClassicAPI](https://github.com/brues-code/ClassicAPI).** For a build that does
+not, use [The Kludge Bureau's releases](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest)
+or [my legacy fork](https://github.com/roby-brok/pfQuest) instead.
+
+### Database packs
+
+This ships the vanilla database. For OctoWoW you also want
+**[pfQuest-octo](https://github.com/roby-brok/pfQuest-octo)**, which folds the TurtleWoW
+data and the Octo corrections into one pack — its folder name already matches its `.toc`,
+so it installs without renaming.
 
 ## Controls
 
@@ -188,3 +219,32 @@ The `mines` and `herbs` lists support an optional skill range and an `auto` shor
 ```
 
 Available tracking lists: `auctioneer`, `banker`, `battlemaster`, `chests`, `fish`, `flight`, `herbs`, `innkeeper`, `mailbox`, `meetingstone`, `mines`, `rares`, `repair`, `spirithealer`, `stablemaster`, `vendor`
+
+## Reporting bugs
+
+**Check whether it happens on [upstream](https://github.com/brues-code/pfQuest) first.**
+This fork is a thin layer on top, so almost every bug belongs in
+[brues-code's tracker](https://github.com/brues-code/pfQuest/issues) — reporting it there
+fixes it for everyone rather than just for OctoWoW.
+
+Open an issue [here](https://github.com/roby-brok/pfQuest-classicAPI/issues) only if it
+concerns something listed in [CHANGES-octo.md](CHANGES-octo.md), or if it is about the
+OctoWoW database itself — in which case
+[pfQuest-octo](https://github.com/roby-brok/pfQuest-octo/issues) is the right place.
+
+Useful things to include: the quest or NPC ID, whether a clean config still shows it, what
+other addons are loaded, and your client language.
+
+`/db checkdb` lists any quest in your log that has no objective data — worth running before
+reporting a missing pin, since it distinguishes "the database is wrong" from "this quest
+legitimately has no objectives".
+
+## Supporting the authors
+
+[Shagu](https://github.com/sponsors/shagu) wrote pfQuest, [The Kludge
+Bureau](https://github.com/The-Kludge-Bureau/pfQuest) continued it, and
+[brues-code](https://buymeacoffee.com/brues) wrote the ClassicAPI Edition and the
+ClassicAPI DLL this build depends on. They come first.
+
+If the OctoWoW-specific work here has been useful, mine is
+[here](https://buymeacoffee.com/robybrok).

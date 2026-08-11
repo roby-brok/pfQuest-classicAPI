@@ -38,6 +38,11 @@ local corrections = {
   -- "Destroy any one of the Hakkari Bijous ... at the Altar of Zanza on
   -- Yojamba Isle" -- Stranglethorn Vale (33), 13.4 15.1
   [8240] = { obj = { O = { 180367 } } },
+
+  -- "Travel to the Wyrmbog ... seek out Emberstrife's Den ... wear the Amulet"
+  -- -- the objective is Emberstrife himself, unit 10321, Dustwallow Marsh (15).
+  -- Flagged by a player via /db checkdb, 2026-08-11.
+  [6570] = { obj = { U = { 10321 } } },
 }
 
 local quests = pfDB and pfDB["quests"] and pfDB["quests"]["data"]

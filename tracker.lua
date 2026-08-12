@@ -35,14 +35,18 @@ local function ShowTooltip()
         if objectives and objectives > 0 then
           for i = 1, objectives, 1 do
             local text, _, done = GetQuestLogLeaderBoard(i, qlogid)
-            local _, _, obj, cur, req = strfind(gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
-            if done then
-              GameTooltip:AddLine(" - " .. text, 0, 1, 0)
-            elseif cur and req then
-              local r, g, b = pfMap.tooltip:GetColor(cur, req)
-              GameTooltip:AddLine(" - " .. text, r, g, b)
-            else
-              GameTooltip:AddLine(" - " .. text, 1, 0, 0)
+            -- custom servers can return empty objective rows; skip them
+            -- instead of erroring on the gsub/concat
+            if text then
+              local _, _, obj, cur, req = strfind(gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
+              if done then
+                GameTooltip:AddLine(" - " .. text, 0, 1, 0)
+              elseif cur and req then
+                local r, g, b = pfMap.tooltip:GetColor(cur, req)
+                GameTooltip:AddLine(" - " .. text, r, g, b)
+              else
+                GameTooltip:AddLine(" - " .. text, 1, 0, 0)
+              end
             end
           end
           GameTooltip:AddLine(" ")
@@ -541,7 +545,13 @@ function tracker.ButtonEvent(self)
       for i = 1, objectives, 1 do
         local text, type, done = GetQuestLogLeaderBoard(i, qlogid)
         board_cache[i] = { text, type, done }
-        local _, _, obj, objNum, objNeeded = strfind(gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
+        -- custom servers can return empty objective rows; count them like
+        -- unparsed text instead of erroring on the gsub
+        local obj, objNum, objNeeded
+        if text then
+          local _, _, o, n, r = strfind(gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
+          obj, objNum, objNeeded = o, n, r
+        end
         if objNum and objNeeded then
           max = max + objNeeded
           cur = cur + objNum
@@ -568,9 +578,13 @@ function tracker.ButtonEvent(self)
 
       for i = 1, objectives, 1 do
         -- read from cache instead of calling GetQuestLogLeaderBoard again
-        local entry = board_cache[i]
-        local text, _, done = entry[1], entry[2], entry[3]
-        local _, _, obj, objNum, objNeeded = strfind(gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
+        local entry = board_cache[i] or {}
+        local text, done = entry[1], entry[3]
+        local obj, objNum, objNeeded
+        if text then
+          local _, _, o, n, r = strfind(gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
+          obj, objNum, objNeeded = o, n, r
+        end
 
         if not self.objectives[i] then
           self.objectives[i] = self:CreateFontString(nil, "HIGH", "GameFontNormal")
@@ -586,7 +600,7 @@ function tracker.ButtonEvent(self)
           self.objectives[i]:SetText(string.format("|cffffffff- %s:|r %s/%s", obj, objNum, objNeeded))
         else
           self.objectives[i]:SetTextColor(0.8, 0.8, 0.8)
-          self.objectives[i]:SetText("|cffffffff- " .. text)
+          self.objectives[i]:SetText("|cffffffff- " .. (text or ""))
         end
 
         self.objectives[i]:Show()

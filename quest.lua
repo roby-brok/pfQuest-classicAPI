@@ -655,7 +655,7 @@ function pfQuest:AddQuestLogIntegration()
   pfQuest.buttonOnline:SetSize(18, 15)
   pfQuest.buttonOnline:SetPoint("TOPRIGHT", dockFrame, "TOPRIGHT", -12, -10)
   pfQuest.buttonOnline:SetScript("OnClick", function()
-    if pfUI and pfUI.chat then
+    if pfUI and pfUI.chat and pfUI.chat.urlcopy then
       pfUI.chat.urlcopy.text:SetText(pfQuest:GetDatabaseURL() .. (this:GetID() or 0))
       pfUI.chat.urlcopy:Show()
     else

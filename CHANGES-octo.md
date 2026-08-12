@@ -65,6 +65,26 @@ original entry got wrong.
 
 Fixed here rather than removed — see below.
 
+**Five hardening fixes from the 2026-08-12 deep audit** (all present in Shagu's lineage
+too, so they apply to the upstream tree as-is):
+
+- **`tracker.lua` errored on empty objective rows** — custom servers can return nil from
+  `GetQuestLogLeaderBoard` for a live objective slot, and three sites (`gsub`/concat in
+  the tracker tooltip, the progress pass, the cached draw) took the text unguarded. The
+  map and database sites were already safe behind their `type == "monster"` checks.
+- **`browser.lua` crashed drawing a favourited quest the database no longer names** —
+  `loc[id]["T"]` straight off a nil entry. Favourites are SavedVariables; a pack update
+  or locale switch is enough. Rows now degrade to `#id`. Same fallback for unit/object
+  rows, and for the vendor tooltip, which concatenated a nil unit name.
+- **`compat/client.lua` could abort at login** — the minimap-arrow probe calls
+  `strlower(v:GetModel())` on every unnamed Model child of the Minimap; a model-less
+  frame from any other addon returns nil there and the whole file dies. Now type-checked.
+- **`quest.lua` url-copy assumed `pfUI.chat.urlcopy` exists** — a pfUI build with the
+  chat module disabled passes the `pfUI.chat` guard and crashes on the member; such
+  setups now fall through to the StaticPopup path like non-pfUI users.
+- None of these changes behaviour on good data; they only remove ways to error on
+  imperfect data.
+
 ## Local changes
 
 - **Tracker defaults to Current Zone** rather than All Quests, which otherwise puts every

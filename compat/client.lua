@@ -46,7 +46,10 @@ end
 local minimaparrow = ({ Minimap:GetChildren() })[9]
 for k, v in pairs({ Minimap:GetChildren() }) do
   if v:IsObjectType("Model") and not v:GetName() then
-    if string.find(strlower(v:GetModel()), "interface\\minimap\\minimaparrow") then
+    -- GetModel() can return nil on model-less frames other addons parent to
+    -- the minimap; strlower(nil) would abort the whole file at login
+    local model = v:GetModel()
+    if type(model) == "string" and string.find(strlower(model), "interface\\minimap\\minimaparrow") then
       minimaparrow = v
       break
     end

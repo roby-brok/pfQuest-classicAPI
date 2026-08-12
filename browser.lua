@@ -246,7 +246,7 @@ local function ResultButtonEnterSpecial()
           skip = true
         end
         if units[unitID] and not skip then
-          local name = pfDB.units.loc[unitID]
+          local name = pfDB.units.loc[unitID] or unitID
           local zone = nil
           if units[unitID].coords and units[unitID].coords[1] then
             zone = units[unitID].coords[1][3]
@@ -265,7 +265,7 @@ local function ResultButtonEnterSpecial()
                 skip = true
               end
               if units[unit] and not skip then
-                local name = pfDB.units.loc[unit]
+                local name = pfDB.units.loc[unit] or unit
                 local zone = nil
                 if units[unit].coords and units[unit].coords[1] then
                   zone = units[unit].coords[1][3]
@@ -316,7 +316,7 @@ local function ResultButtonEnterSpecial()
                 skip = true
               end
               if objects[unit] and not skip then
-                local name = pfDB.objects.loc[unit]
+                local name = pfDB.objects.loc[unit] or unit
                 local zone = nil
                 if objects[unit].coords and objects[unit].coords[1] then
                   zone = objects[unit].coords[1][3]
@@ -348,7 +348,7 @@ local function ResultButtonEnterSpecial()
           skip = true
         end
         if units[unitID] and not skip then
-          local name = pfDB.units.loc[unitID]
+          local name = pfDB.units.loc[unitID] or unitID
           if sellcount ~= 0 then
             name = name .. " (" .. sellcount .. ")"
           end
@@ -408,9 +408,13 @@ local function ResultButtonReload(self)
 
   -- actions by search type
   if self.btype == "quests" then
-    self.name = pfDB[self.btype]["loc"][self.id]["T"]
+    -- favourites and links can carry ids the current database no longer
+    -- names (pack updates, locale switches); draw them as #id, not an error
+    local loc = pfDB[self.btype]["loc"][self.id]
+    self.name = (loc and loc["T"]) or ("#" .. self.id)
     self.text:SetText("|cffffcc00|Hquest:0:0:0:0|h[" .. self.name .. "]|h|r")
   elseif self.btype == "units" or self.btype == "objects" then
+    self.name = self.name or pfDB[self.btype]["loc"][self.id] or ("#" .. self.id)
     local level = pfDB[self.btype]["data"][self.id] and pfDB[self.btype]["data"][self.id]["lvl"] or ""
     if level and level ~= "" then
       level = " (" .. level .. ")"

@@ -146,8 +146,15 @@ too, so they apply to the upstream tree as-is):
   unnoticed. Whole-entry database merging used to cause this in bulk (fixed in
   `pfQuest-octo`), but a bad pack update or a real data gap still can, so it is now
   something you can check rather than something you discover by staring at the map.
-  A pure delivery quest legitimately has no objectives; anything asking you to kill or
-  collect should never be listed.
+  Reworked 2026-08-14 after its first field reports: the original message called every
+  objective-less quest "draws no pins", which is wrong for delivery/talk-to quests —
+  pfQuest always pins a log quest's `["end"]`, colored from accept when there are no
+  leaderboards. The report now splits the list: **delivery/talk-to quests are named with
+  their turn-in pin** ("turn-in pin at Baine Bloodhoof"), and only a quest with neither
+  `["obj"]` nor `["end"]` — one that truly draws nothing — is red-flagged as worth
+  reporting. Verified against the 2026-08-13 report round: all four flagged quests were
+  talk-to/delivery with working enders, and the old wording sent players to report data
+  that was never broken.
 
 ## Not ported, and why
 

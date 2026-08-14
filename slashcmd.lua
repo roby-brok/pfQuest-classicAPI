@@ -385,10 +385,17 @@ SlashCmdList["PFDB"] = function(input, editbox)
   -- until someone happened to look at the map. Whole-entry database merging
   -- used to cause this in bulk; that is fixed, but a bad pack update or a
   -- genuine data gap can still do it, so make it something you can check.
+  --
+  -- A quest without ["obj"] is not automatically broken: delivery and talk-to
+  -- quests complete at their ender, and the map pins a log quest's ["end"]
+  -- from the moment it is accepted (a zero-leaderboard quest counts as
+  -- complete, so the marker is colored immediately). Those are listed here
+  -- with that pin named. Only a quest with neither ["obj"] nor ["end"] truly
+  -- draws nothing -- that is the one worth reporting.
   if arg1 == "checkdb" then
     local qdata = pfDB["quests"]["data"]
     local qloc = pfDB["quests"]["loc"]
-    local missing, total = {}, 0
+    local missing, delivery, total = {}, {}, 0
 
     for questid, data in pairs(pfQuest.questlog or {}) do
       total = total + 1
@@ -396,7 +403,28 @@ SlashCmdList["PFDB"] = function(input, editbox)
       local obj = entry and entry["obj"]
       if not (obj and next(obj)) then
         local title = (qloc and qloc[questid] and qloc[questid]["T"]) or data.title or "?"
-        insert(missing, format("|cffffcc00%s|r |cffcccccc(%s)|r", title, tostring(questid)))
+
+        -- name the enders so the report says where the quest's pin is
+        local enders = ""
+        local ender = entry and entry["end"]
+        if ender then
+          for key, db in pairs({ ["U"] = "units", ["O"] = "objects" }) do
+            if ender[key] then
+              for _, id in pairs(ender[key]) do
+                local name = pfDB[db]["loc"][id]
+                if name then
+                  enders = enders .. (enders == "" and "" or ", ") .. name
+                end
+              end
+            end
+          end
+        end
+
+        if enders ~= "" then
+          insert(delivery, format("|cffffcc00%s|r |cffcccccc(%s) -- turn-in pin at|r |cffffffff%s|r", title, tostring(questid), enders))
+        else
+          insert(missing, format("|cffffcc00%s|r |cffcccccc(%s)|r", title, tostring(questid)))
+        end
       end
     end
 
@@ -404,18 +432,26 @@ SlashCmdList["PFDB"] = function(input, editbox)
       "|cff33ffccpf|cffffffffQuest|r: checked " .. total .. " quest(s) in your log."
     )
 
-    if getn(missing) == 0 then
+    if getn(missing) == 0 and getn(delivery) == 0 then
       DEFAULT_CHAT_FRAME:AddMessage("  |cff33ff33All of them have objective data.|r")
-    else
+    end
+
+    if getn(delivery) > 0 then
       DEFAULT_CHAT_FRAME:AddMessage(
-        "  |cffff5555" .. getn(missing) .. " with no objective data -- these draw no pins:|r"
+        "  |cffffcc00" .. getn(delivery) .. " delivery/talk-to -- no objectives to draw; the pin is the turn-in marker:|r"
+      )
+      for i = 1, getn(delivery) do
+        DEFAULT_CHAT_FRAME:AddMessage("    " .. delivery[i])
+      end
+    end
+
+    if getn(missing) > 0 then
+      DEFAULT_CHAT_FRAME:AddMessage(
+        "  |cffff5555" .. getn(missing) .. " with no objective data and no turn-in -- these draw nothing; worth reporting:|r"
       )
       for i = 1, getn(missing) do
         DEFAULT_CHAT_FRAME:AddMessage("    " .. missing[i])
       end
-      DEFAULT_CHAT_FRAME:AddMessage(
-        "  |cffccccccA pure delivery quest legitimately has none. Anything that asks you to kill or collect should not be listed -- that is a database bug worth reporting.|r"
-      )
     end
     return
   end

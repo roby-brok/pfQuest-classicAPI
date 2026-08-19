@@ -163,6 +163,13 @@ tracker:SetScript("OnMouseUp", function()
 end)
 
 tracker:SetScript("OnUpdate", function()
+  -- Progress refreshes are queued by the central quest-log scanner, never
+  -- executed from QUEST_LOG_UPDATE itself. Process at most one changed quest
+  -- per frame after the event burst has settled.
+  if tracker.refreshAfter and tracker.refreshAfter <= GetTime() then
+    tracker.ProcessQuestRefresh()
+  end
+
   if WorldMapFrame:IsShown() then
     if this.strata ~= "FULLSCREEN_DIALOG" then
       this:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -216,7 +223,61 @@ end)
 
 tracker.buttons = {}
 tracker.buttonByTitle = {} -- reverse map: title → button index, for O(1) duplicate detection
+tracker.refreshQueue = {}
+tracker.refreshPending = {}
+tracker.refreshAfter = nil
 tracker.mode = "QUEST_TRACKING"
+
+function tracker.QueueQuestRefresh(questid)
+  if not questid or tracker.refreshPending[questid] then
+    return
+  end
+
+  tracker.refreshPending[questid] = true
+  table.insert(tracker.refreshQueue, questid)
+
+  -- Do not touch quest-log frames in the event's frame. Multiple events for
+  -- the same quest are coalesced by refreshPending during this short delay.
+  if not tracker.refreshAfter then
+    tracker.refreshAfter = GetTime() + 0.05
+  end
+end
+
+function tracker.ProcessQuestRefresh()
+  local questid = table.remove(tracker.refreshQueue, 1)
+  if not questid then
+    tracker.refreshAfter = nil
+    return
+  end
+
+  tracker.refreshPending[questid] = nil
+
+  local data = pfQuest.questlog and pfQuest.questlog[questid]
+  local id = data and tracker.buttonByTitle[data.title]
+  local button = id and tracker.buttons[id]
+
+  -- Database-backed rows normally match the numeric quest ID. Custom-server
+  -- quests can be keyed by title, so fall back to the visible row title.
+  if not button or button.empty or
+     (button.questid ~= questid and (not data or button.title ~= data.title)) then
+    button = nil
+    for _, candidate in pairs(tracker.buttons) do
+      if not candidate.empty and
+         (candidate.questid == questid or (data and candidate.title == data.title)) then
+        button = candidate
+        break
+      end
+    end
+  end
+
+  if button then
+    tracker.ButtonEvent(button)
+    tracker.needsSort = true
+  end
+
+  -- Leave subsequent quests for later frames instead of creating a burst.
+  tracker.refreshAfter = tracker.refreshQueue[1] and GetTime() or nil
+end
 
 function tracker.RefreshNearestDistances()
   if tracker.mode ~= "QUEST_TRACKING" or GetQuestSortMode() ~= "distance" then
@@ -886,16 +947,15 @@ function tracker.ButtonAdd(title, node)
     tracker.buttons[id].icon:SetPoint("TOPLEFT", 2, -4)
     tracker.buttons[id].icon:SetSize(12, 12)
 
-    tracker.buttons[id]:RegisterEvent("QUEST_WATCH_UPDATE")
-    tracker.buttons[id]:RegisterEvent("QUEST_LOG_UPDATE")
-    tracker.buttons[id]:RegisterEvent("QUEST_FINISHED")
+    -- Quest-log changes are handled by pfQuest's central event pipeline.
+    -- Child registration would run the same ButtonEvent synchronously on
+    -- every visible row.
 
     tracker.buttons[id]:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
     tracker.buttons[id]:SetScript("OnEnter", tracker.ButtonEnter)
     tracker.buttons[id]:SetScript("OnLeave", tracker.ButtonLeave)
     tracker.buttons[id]:SetScript("OnUpdate", tracker.ButtonUpdate)
-    tracker.buttons[id]:SetScript("OnEvent", tracker.ButtonEvent)
     tracker.buttons[id]:SetScript("OnClick", tracker.ButtonClick)
   end
 

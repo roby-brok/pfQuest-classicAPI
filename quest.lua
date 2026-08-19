@@ -481,7 +481,7 @@ function pfQuest:UpdateQuestlog()
   for qlogid = 1, 40 do
     local title, _, _, header, collapsed, complete = compat.GetQuestLogTitle(qlogid)
     local objectives = GetNumQuestLeaderBoards(qlogid)
-    local watched, questid, state
+    local watched, questid, state, progress
 
     if header then
       -- track the collapsed state and name for subsequent quests
@@ -494,14 +494,17 @@ function pfQuest:UpdateQuestlog()
 
       -- build state string using table.concat (avoid string concat garbage)
       local stateParts = { watched and "track" or "" }
+      local progressParts = { tostring(objectives or 0) }
       if objectives then
         for i = 1, objectives, 1 do
           local text, _, done = GetQuestLogLeaderBoard(i, qlogid)
           stateParts[getn(stateParts) + 1] = i
           stateParts[getn(stateParts) + 1] = done and "done" or "todo"
+          progressParts[getn(progressParts) + 1] = text or ""
         end
       end
       state = concat(stateParts)
+      progress = concat(progressParts, "\001")
 
       -- Some WoW clients (e.g. group/dungeon/raid quests) set collapsed=true on the
       -- individual quest entry itself rather than (or in addition to) the zone header.
@@ -519,6 +522,7 @@ function pfQuest:UpdateQuestlog()
           title = title,
           qlogid = qlogid,
           state = state,
+          progress = progress,
           collapsed = initCollapsed,
         }
         change = true
@@ -535,8 +539,20 @@ function pfQuest:UpdateQuestlog()
         pfQuest.questlog_tmp[questid].state = state
         change = true
       else
+        local progressChanged = pfQuest.questlog[questid].progress ~= progress
         pfQuest.questlog_tmp[questid] = pfQuest.questlog[questid]
+
+        -- A count-only change (for example 1/12 -> 2/12) does not require a
+        -- map/database rebuild. Ask the tracker to refresh only this quest,
+        -- outside the event handler and at most once per frame.
+        if progressChanged and pfQuest.tracker and pfQuest.tracker.QueueQuestRefresh then
+          pfQuest.tracker.QueueQuestRefresh(questid)
+        end
       end
+
+      -- RELOAD/slot-change paths reuse the old table, so keep their progress
+      -- fingerprint current as well. Their normal queue entry refreshes UI.
+      pfQuest.questlog_tmp[questid].progress = progress
 
       -- record the quest's zone header so Current Zone mode can match quests
       -- by their log grouping -- works for custom zones with no database nodes

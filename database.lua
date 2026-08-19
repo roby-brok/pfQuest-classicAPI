@@ -2106,7 +2106,7 @@ pfServerScan:Hide()
 -- refused for lack of room.
 pfServerScan.scanID = 1
 pfServerScan.max = 100000
-pfServerScan.window = 250
+pfServerScan.window = 100
 pfServerScan.inflight = 0
 pfServerScan.scanPending = {}
 

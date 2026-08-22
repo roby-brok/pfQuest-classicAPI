@@ -1,7 +1,16 @@
 # Changes on top of brues-code/pfQuest
 
 Everything on the `octo` branch that is not in
-[brues-code/pfQuest](https://github.com/brues-code/pfQuest).
+[brues-code/pfQuest](https://github.com/brues-code/pfQuest) — **12 files, +612 / −55**,
+measured against upstream `149fbd4` (2026-08-21 sync: the pfServerScan window reduced to
+100, and fdotcico's debounced quest-refresh queue replacing the tracker's per-row event
+fan-out).
+
+**Upstream's `f5ff7f3` is not listed as taken because it was already here.** The quest
+log's [Translate] button fix was written in this fork first and offered upstream as PR #2;
+brues merged it, rewording two comments. Cherry-picking it back produced an empty diff.
+Same story as the nameplate colour work in the pfUI fork: the SHA differs, the code does
+not.
 
 Small, because the upstream tree needed very little: the shipped databases are
 **byte-identical** to the build this fork came from (verified by hashing `quests`, `units`,

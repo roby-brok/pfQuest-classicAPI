@@ -1,6 +1,6 @@
 # Changes on top of brues-code/pfQuest
 
-Everything on the `octo` branch that is not in
+Everything on the `master` branch that is not in
 [brues-code/pfQuest](https://github.com/brues-code/pfQuest) — **12 files, +612 / −55**,
 measured against upstream `149fbd4` (2026-08-21 sync: the pfServerScan window reduced to
 100, and fdotcico's debounced quest-refresh queue replacing the tracker's per-row event

@@ -25,7 +25,7 @@
 > Upstream is **https://github.com/brues-code/pfQuest** — go there for the real project.
 >
 > 📋 **[CHANGES-octo.md](CHANGES-octo.md) — full changelog of the changes on top of upstream.**
-> Local changes live on the `octo` branch. GPLv3, same as upstream; see `LICENSE`.
+> Local changes live on the `master` branch. GPLv3, same as upstream; see `LICENSE`.
 
 # pfQuest
 
@@ -83,7 +83,7 @@ On Vanilla clients, WoW will show a warning if an addon exceeds the default memo
 
 **Download**
 
-1. Grab the [latest code](https://github.com/roby-brok/pfQuest/archive/refs/heads/octo.zip) (branch `octo`)
+1. Grab the [latest code](https://github.com/roby-brok/pfQuest/archive/refs/heads/master.zip) (branch `master`)
 2. Unpack it — you get a folder called `pfQuest-classicAPI-octo`
 3. **Rename it to `pfQuest`**
 4. Move it into `Wow-Directory\Interface\AddOns`

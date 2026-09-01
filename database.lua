@@ -242,21 +242,43 @@ pfDatabase.itemlist:SetScript("OnUpdate", function()
     this.db[k] = nil
   end
 
-  -- fill new item db with bag items
-  for bag = 4, 0, -1 do
-    for slot = 1, GetContainerNumSlots(bag) do
-      local itemName = C_Item.GetItemName(ItemLocation:CreateFromBagAndSlot(bag, slot))
+  -- fill new item db with bag and equipped items. C_Item resolves names
+  -- straight from the client cache; without ClassicAPI (vanilla clients
+  -- that cannot load the DLL) fall back to link parsing + GetItemInfo.
+  if C_Item and C_Item.GetItemName and ItemLocation then
+    for bag = 4, 0, -1 do
+      for slot = 1, GetContainerNumSlots(bag) do
+        local itemName = C_Item.GetItemName(ItemLocation:CreateFromBagAndSlot(bag, slot))
+        if itemName then
+          this.db[itemName] = true
+        end
+      end
+    end
+
+    for i=INVSLOT_FIRST_EQUIPPED,INVSLOT_LAST_EQUIPPED do
+      local itemName = C_Item.GetItemName(ItemLocation:CreateFromEquipmentSlot(i))
       if itemName then
         this.db[itemName] = true
       end
     end
-  end
+  else
+    for bag = 4, 0, -1 do
+      for slot = 1, GetContainerNumSlots(bag) do
+        local link = GetContainerItemLink(bag, slot)
+        local _, _, parse = strfind((link or ""), "(%d+):")
+        if parse then
+          local item = GetItemInfo(parse)
+          if item then this.db[item] = true end
+        end
+      end
+    end
 
-  -- fill new item db with equipped items
-  for i=INVSLOT_FIRST_EQUIPPED,INVSLOT_LAST_EQUIPPED do
-    local itemName = C_Item.GetItemName(ItemLocation:CreateFromEquipmentSlot(i))
-    if itemName then
-      this.db[itemName] = true
+    for i=1,19 do
+      if GetInventoryItemLink("player", i) then
+        local _, _, link = string.find(GetInventoryItemLink("player", i), "(item:%d+:%d+:%d+:%d+)")
+        local item = GetItemInfo(link)
+        if item then this.db[item] = true end
+      end
     end
   end
 
@@ -771,7 +793,7 @@ end
 -- pickup pins for quests never accepted, historical journal entries, etc.).
 -- field is "T" (title), "O" (objectives), or "D" (description).
 function pfDatabase:GetQuestText(id, field)
-  local d = C_QuestLog.GetQuestDetails(id)
+  local d = C_QuestLog and C_QuestLog.GetQuestDetails and C_QuestLog.GetQuestDetails(id)
   if d then
     if field == "T" then return d.title end
     if field == "O" then return d.objectives end
@@ -1973,13 +1995,183 @@ function pfDatabase:FormatQuestText(questText)
   return string.gsub(questText, "($[Gg])([^:]+):([^;]+);", "%" .. UnitSex("player"))
 end
 
+-- Levenshtein distance, used only by the no-ClassicAPI GetQuestIDs
+-- fallback below. Based on: https://gist.github.com/Badgerati/3261142
+local len1, len2, cost, lbest
+local levcache = {}
+local function lev(str1, str2, limit)
+  if levcache[str1..":"..str2] then
+    return levcache[str1..":"..str2]
+  end
+
+  len1, len2, cost = string.len(str1), string.len(str2), 0
+
+  -- abort early on empty strings
+  if len1 == 0 then
+    return len2
+  elseif len2 == 0 then
+    return len1
+  elseif str1 == str2 then
+    return 0
+  end
+
+  -- initialise the base matrix
+  local matrix = {}
+  for i = 0, len1, 1 do
+    matrix[i] = { [0] = i }
+  end
+
+  for j = 0, len2, 1 do
+    matrix[0][j] = j
+  end
+
+  -- levenshtein algorithm
+  for i = 1, len1, 1 do
+    lbest = limit
+
+    for j = 1, len2, 1 do
+      cost = string.byte(str1,i) == string.byte(str2,j) and 0 or 1
+      matrix[i][j] = math.min(matrix[i-1][j] + 1, matrix[i][j-1] + 1, matrix[i-1][j-1] + cost)
+
+      if limit and matrix[i][j] < limit then
+        lbest = matrix[i][j]
+      end
+    end
+
+    if limit and lbest >= limit then
+      levcache[str1..":"..str2] = limit
+      return limit
+    end
+  end
+
+  -- return the levenshtein distance
+  levcache[str1..":"..str2] = matrix[len1][len2]
+  return matrix[len1][len2]
+end
+
 -- GetQuestIDs
 -- Returns a single-element array containing the engine-authoritative quest
 -- ID for the given quest log slot, or nil for headers / empty slots. Callers
--- expect the array shape, so the wrapper stays.
+-- expect the array shape, so the wrapper stays. Without ClassicAPI the id
+-- is estimated from the database by title/level/race/class and, for
+-- ambiguous titles, levenshtein distance over the quest texts (the
+-- original pre-ClassicAPI implementation).
 function pfDatabase:GetQuestIDs(qid)
-  local id = C_QuestLog.GetQuestIDForLogIndex(qid)
-  if id and id > 0 then return { id } end
+  if C_QuestLog and C_QuestLog.GetQuestIDForLogIndex then
+    local id = C_QuestLog.GetQuestIDForLogIndex(qid)
+    if id and id > 0 then return { id } end
+    return
+  end
+
+  if GetQuestLink then
+    local questLink = GetQuestLink(qid)
+    if questLink then
+      local _, _, id = strfind(questLink, "|c.*|Hquest:([%d]+):([-]?[%d]+)|h%[(.*)%]|h|r")
+      if id then return { [1] = tonumber(id) } end
+    end
+  end
+
+  local oldID = GetQuestLogSelection()
+  SelectQuestLogEntry(qid)
+  local text, objective = GetQuestLogQuestText()
+  local title, level, _, header = compat.GetQuestLogTitle(qid)
+  SelectQuestLogEntry(oldID)
+
+  if header or not title then return end
+  local identifier = title .. ":" .. ( level or "") .. ":" .. ( objective or "") .. ":" .. ( text or "")
+
+  -- always make sure the quest-cache exists
+  pfQuest_questcache = pfQuest_questcache or {}
+
+  if pfQuest_questcache[identifier] and pfQuest_questcache[identifier][1] then
+    return pfQuest_questcache[identifier]
+  end
+
+  local _, race = UnitRace("player")
+  local prace = pfDatabase:GetBitByRace(race)
+  local _, class = UnitClass("player")
+  local pclass = pfDatabase:GetBitByClass(class)
+
+  local best = 0
+  local results = {}
+
+  local tcount = 0
+  -- check if multiple quests share the same name
+  for id, data in pairs(pfDB["quests"]["loc"]) do
+    if quests[id] and data.T == title then tcount = tcount + 1 end
+  end
+
+  -- no title was found, run levenshtein on titles
+  if tcount == 0 and title then
+    local tlen = string.len(title)
+    local tscore, tbest, ttitle = nil, math.min(tlen/2, 5), nil
+    for id, data in pairs(pfDB["quests"]["loc"]) do
+      if quests[id] and data.T then
+        tscore = lev(data.T, title, tbest)
+        if tscore < tbest then
+          tbest = tscore
+          ttitle = data.T
+        end
+      end
+    end
+
+    if not ttitle then
+      -- return early on unknown quests.
+      if not pfDatabase.localized then
+        -- skip cache if locale-checks are still running
+        return { title }
+      else
+        -- flag quest as unknown and return
+        pfQuest_questcache[identifier] = { title }
+        return pfQuest_questcache[identifier]
+      end
+    else
+      -- set title to best result
+      title = ttitle
+    end
+  end
+
+  for id, data in pairs(pfDB["quests"]["loc"]) do
+    local score = 0
+
+    if quests[id] and data.T and data.T == title then
+      -- low score for same name
+      score = 1
+
+      -- check level and set score
+      if quests[id]["lvl"] == level then
+        score = score + 8
+      end
+
+      -- check race and set score
+      if quests[id]["race"] and ( bit.band(quests[id]["race"], prace) == prace ) then
+        score = score + 8
+      end
+
+      -- check class and set score
+      if quests[id]["class"] and ( bit.band(quests[id]["class"], pclass) == pclass ) then
+        score = score + 8
+      end
+
+      -- if multiple quests share the same name, use levenshtein algorithm,
+      -- to compare quest text distances in order to estimate the best quest id
+      if tcount > 1 then
+        -- check objective and calculate score
+        score = score + max(24 - lev(pfDatabase:FormatQuestText(pfDB.quests.loc[id]["O"]), objective, 24),0)
+
+        -- check description and calculate score
+        score = score + max(24 - lev(pfDatabase:FormatQuestText(pfDB.quests.loc[id]["D"]), text, 24),0)
+      end
+
+      if score > best then best = score end
+      results[score] = results[score] or {}
+      if score > 0 then table.insert(results[score], id) end
+    end
+  end
+
+  -- cache for next time
+  pfQuest_questcache[identifier] = results[best]
+  return results[best]
 end
 
 -- browser search related defaults and values
@@ -2279,12 +2471,31 @@ do
       pfDatabase:BuildStaticRejectSet()
     end
   end
-  if C_Item.IsItemDataCachedByID(HEARTHSTONE_ITEM_ID) then
-    RunNameCheck(C_Item.GetItemNameByID(HEARTHSTONE_ITEM_ID))
+  if C_Item and C_Item.IsItemDataCachedByID and Item then
+    if C_Item.IsItemDataCachedByID(HEARTHSTONE_ITEM_ID) then
+      RunNameCheck(C_Item.GetItemNameByID(HEARTHSTONE_ITEM_ID))
+    else
+      local item = Item:CreateFromItemID(HEARTHSTONE_ITEM_ID)
+      item:ContinueOnItemLoad(function()
+        RunNameCheck(item:GetItemName())
+      end)
+    end
   else
-    local item = Item:CreateFromItemID(HEARTHSTONE_ITEM_ID)
-    item:ContinueOnItemLoad(function()
-      RunNameCheck(item:GetItemName())
+    -- no ClassicAPI: poll GetItemInfo until the client cache knows the
+    -- hearthstone (the original locale-detection approach). Give up after
+    -- 60s and mark localization done so dependent caching can proceed.
+    local poller = CreateFrame("Frame", "pfQuestLocaleCheck", UIParent)
+    poller.giveup = GetTime() + 60
+    poller:SetScript("OnUpdate", function()
+      if ( this.tick or 0 ) > GetTime() then return else this.tick = GetTime() + 1 end
+      local name = GetItemInfo(HEARTHSTONE_ITEM_ID)
+      if name and name ~= "" then
+        RunNameCheck(name)
+        this:Hide()
+      elseif GetTime() > this.giveup then
+        pfDatabase.localized = true
+        this:Hide()
+      end
     end)
   end
 end

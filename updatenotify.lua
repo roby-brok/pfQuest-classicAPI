@@ -67,7 +67,7 @@ versioncheck:SetScript("OnEvent", function()
   -- display available update
   if version and version > 0 and pfQuest_config.latest and pfQuest_config.latest > version and not displayed then
     DEFAULT_CHAT_FRAME:AddMessage(
-      pfQuest_Loc["|cff33ffccpf|rQuest: New version available! Have a look at https://github.com/brues-code/pfQuest/releases/latest !"]
+      pfQuest_Loc["|cff33ffccpf|rQuest: New version available! Have a look at https://github.com/roby-brok/pfQuest/releases/latest !"]
     )
     displayed = true
   end

@@ -1,3 +1,15 @@
+> ### This repository was `pfQuest-classicAPI` until 2026-09-01
+>
+> **If pfQuest started misbehaving after an update, you are on the wrong build for your
+> client.** The name `roby-brok/pfQuest` used to hold the pre-ClassicAPI build; the two
+> swapped names. GitHub drops a rename redirect once the freed name is reused, so an
+> existing `roby-brok/pfQuest` remote now pulls *this* build rather than the old one.
+>
+> This build is written against **ClassicAPI** and needs it — it reads quest state through
+> `C_QuestLog` rather than matching quest text. Without the DLL, use
+> **[roby-brok/pfQuest-legacy](https://github.com/roby-brok/pfQuest-legacy)**, which is the
+> build that used to live at this address.
+
 > ### Attribution
 >
 > **This is a downstream fork. Almost none of the work here is mine.**
@@ -71,7 +83,7 @@ On Vanilla clients, WoW will show a warning if an addon exceeds the default memo
 
 **Download**
 
-1. Grab the [latest code](https://github.com/roby-brok/pfQuest-classicAPI/archive/refs/heads/octo.zip) (branch `octo`)
+1. Grab the [latest code](https://github.com/roby-brok/pfQuest/archive/refs/heads/octo.zip) (branch `octo`)
 2. Unpack it — you get a folder called `pfQuest-classicAPI-octo`
 3. **Rename it to `pfQuest`**
 4. Move it into `Wow-Directory\Interface\AddOns`
@@ -81,14 +93,14 @@ On Vanilla clients, WoW will show a warning if an addon exceeds the default memo
 
 ```sh
 cd Wow-Directory/Interface/AddOns
-git clone -b octo https://github.com/roby-brok/pfQuest-classicAPI.git pfQuest
+git clone -b octo https://github.com/roby-brok/pfQuest.git pfQuest
 ```
 
 The trailing `pfQuest` is what names the folder correctly.
 
 **Requires [ClassicAPI](https://github.com/brues-code/ClassicAPI).** For a build that does
 not, use [The Kludge Bureau's releases](https://github.com/The-Kludge-Bureau/pfQuest/releases/latest)
-or [my legacy fork](https://github.com/roby-brok/pfQuest) instead.
+or [my legacy fork](https://github.com/roby-brok/pfQuest-legacy) instead.
 
 ### Database packs
 
@@ -244,7 +256,7 @@ This fork is a thin layer on top, so almost every bug belongs in
 [brues-code's tracker](https://github.com/brues-code/pfQuest/issues) — reporting it there
 fixes it for everyone rather than just for OctoWoW.
 
-Open an issue [here](https://github.com/roby-brok/pfQuest-classicAPI/issues) only if it
+Open an issue [here](https://github.com/roby-brok/pfQuest/issues) only if it
 concerns something listed in [CHANGES-octo.md](CHANGES-octo.md), or if it is about the
 OctoWoW database itself — in which case
 [pfQuest-octo](https://github.com/roby-brok/pfQuest-octo/issues) is the right place.
